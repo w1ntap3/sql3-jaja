@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sqlite3 table visualizing tool</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.7.0/sql-wasm.js"></script>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="floating-elements">
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h1>sqlite3 table visualizing tool</h1>
+      <div class="subtitle">upload your sqlite3 database disk file to view it</div>
+    </div>
+
+    <div class="upload-section">
+      <div class="file-input-wrapper">
+        <input type="file" id="fileInput" class="file-input" style="display: none;">
+        <button type="button" class="file-input-button">
+          <svg class="upload-icon" viewBox="0 0 24 24">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+          </svg>
+          choose sqlite database
+        </button>
+      </div>
+      
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div style="color: #00ff7f; font-weight: 500; text-transform: lowercase;">processing database...</div>
+      </div>
+    </div>
+
+    <div class="stats-bar" id="statsBar" style="display: none;">
+      <div class="stat-item">
+        <span class="stat-number" id="tableCount">0</span>
+        <span class="stat-label">tables</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" id="recordCount">0</span>
+        <span class="stat-label">records</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" id="fileSize">0</span>
+        <span class="stat-label">file size</span>
+      </div>
+    </div>
+
+    <div id="output" class="output"></div>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>
