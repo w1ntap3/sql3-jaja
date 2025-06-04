@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         verb = strtok(input, " ");
         if (!verb) continue;
 
-        if (strcmp(verb, "newExpense") == 0) {
+        if (!strcmp(verb, "newExpense")) {
             char amountStr[MAX_LENGTH];
             char category[MAX_LENGTH];
             char date[MAX_LENGTH];
@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
             fgets(description, sizeof(description), stdin);
             description[strcspn(description, "\n")] = '\0';
 
-            // Insert or ignore the category
             sqlite3_stmt *cat_stmt;
             rc = sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO categories (name) VALUES (?);", -1, &cat_stmt, 0);
             if (rc != SQLITE_OK) {
@@ -83,7 +82,6 @@ int main(int argc, char *argv[])
             sqlite3_step(cat_stmt);
             sqlite3_finalize(cat_stmt);
 
-            // Get category ID
             sqlite3_stmt *get_id_stmt;
             int categoryId = -1;
 
@@ -101,7 +99,6 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            // Insert the expense
             sqlite3_stmt *expense_stmt;
             rc = sqlite3_prepare_v2(db,
                 "INSERT INTO expenses (amount, category_id, date, description) VALUES (?, ?, ?, ?);",
@@ -125,6 +122,35 @@ int main(int argc, char *argv[])
             }
 
             sqlite3_finalize(expense_stmt);
+        } else if (!strcmp(verb, "removeExpense")) {
+            // removeExpense logic
+        } else if (!strcmp(verb, "newCategory")) {
+            // newCategory logic
+        } else if (!strcmp(verb, "help")) {
+            printf(
+                " %-15s  | %-45s \n"
+                "===================================================================\n"
+                "| %-15s | %-45s |\n"
+                "| %-15s | %-45s |\n"
+                "| %-15s | %-45s |\n"
+                "| %-15s | %-45s |\n"
+                "| %-15s | %-45s |\n"
+                "| %-15s | %-45s |\n"
+                "===================================================================\n",
+                "Command", "Description",
+                "newExpense", "Create a new expense record",
+                "removeExpense", "Remove an expense record",
+                "newCategory", "Create a new expense category record",
+                "website", "Open the website for visualizing your database",
+                "quit", "Kill sql3-jaja",
+                "help", "List of all commands"
+            );
+        } else if (!strcmp(verb, "quit")) {
+            sqlite3_close(db);
+            printf("Your session is over.\n");
+            return(1);
+        } else if (!strcmp(verb, "website")) {
+            system("xdg-open ../sql3-jaja/website/index.html > /dev/null 2>&1");
         }
     }
 
