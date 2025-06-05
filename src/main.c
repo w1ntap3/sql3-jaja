@@ -5,7 +5,7 @@
 
 #define MAX_LENGTH 1024
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
     char input[MAX_LENGTH * 4];
     char *verb;
@@ -15,7 +15,8 @@ int main(int argc, char *argv[])
 
     int rc;
 
-    if (sqlite3_open("jaja.database", &db) != SQLITE_OK) {
+    if (sqlite3_open("jaja.database", &db) != SQLITE_OK)
+    {
         fprintf(stderr, "Could not initialize SQLite3 database: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
         return 1;
@@ -34,22 +35,25 @@ int main(int argc, char *argv[])
         "  description TEXT, "
         "  FOREIGN KEY (category_id) REFERENCES categories(id));";
 
-    if (sqlite3_exec(db, createTablesSQL, 0, 0, &err_msg) != SQLITE_OK) {
+    if (sqlite3_exec(db, createTablesSQL, 0, 0, &err_msg) != SQLITE_OK)
+    {
         fprintf(stderr, "Could not initialize tables: %s\n", err_msg);
         sqlite3_free(err_msg);
         sqlite3_close(db);
         return 1;
     }
 
-    while (1) {
-        printf(">> ");
+    while (1)
+    {
+        printf("sql3-jaja >> ");
         if (!fgets(input, sizeof(input), stdin)) continue;
         input[strcspn(input, "\n")] = '\0'; // remove newline
 
         verb = strtok(input, " ");
-        if (!verb) continue;
 
-        if (!strcmp(verb, "newExpense")) {
+        if (!verb) continue;
+        if (!strcmp(verb, "newExpense"))
+        {
             // input variables
             char amountStr[MAX_LENGTH];
             char category[MAX_LENGTH];
@@ -61,37 +65,70 @@ int main(int argc, char *argv[])
             sqlite3_stmt *cat_stmt;
 
             // inputs
-            printf("1. How much money did you spend? ");
-            fgets(amountStr, sizeof(amountStr), stdin);
-            amountStr[strcspn(amountStr, "\n")] = '\0';
+            while (1) {
+                printf("1. How much money did you spend? ");
+                fgets(amountStr, sizeof(amountStr), stdin);
+                amountStr[strcspn(amountStr, "\n")] = '\0';
 
-            printf("\n2. To which category did you spend the money? ");
-            fgets(category, sizeof(category), stdin);
-            category[strcspn(category, "\n")] = '\0';
+                if(!strcmp(amountStr, "")) {
+                    fprintf(stderr, "Empty amount of money is not valid. Try again.\n");
+                    continue;
+                } else
+                {
+                    break;
+                }
+            }
+            
+            while (1) {
+                printf("\n2. To which category did you spend the money? ");
+                fgets(category, sizeof(category), stdin);
+                category[strcspn(category, "\n")] = '\0';
 
-            printf("\n3. When did the expenditure happen? ");
-            fgets(date, sizeof(date), stdin);
-            date[strcspn(date, "\n")] = '\0';
+                if(!strcmp(category, "")) {
+                    fprintf(stderr, "Empty category ID is not valid. Try again.\n");
+                    continue;
+                } else
+                {
+                    break;
+                }
+            }
+            
+            while (1) {
+                printf("\n3. When did the expenditure happen? ");
+                fgets(date, sizeof(date), stdin);
+                date[strcspn(date, "\n")] = '\0';
 
+                if(!strcmp(date, "")) {
+                    fprintf(stderr, "Empty category ID is not valid. Try again.\n");
+                    continue;
+                } else
+                {
+                    break;
+                }
+            }
+            
             printf("\n4. Describe the expense. ");
             fgets(description, sizeof(description), stdin);
             description[strcspn(description, "\n")] = '\0';
 
             // prepare statement
-            if (sqlite3_prepare_v2(db, expenseQuery, -1, &cat_stmt, 0) != SQLITE_OK) {
+            if (sqlite3_prepare_v2(db, expenseQuery, -1, &cat_stmt, 0) != SQLITE_OK)
+            {
                 fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
                 continue;
             }
 
             // bind input to the statement
-            if (sqlite3_bind_text(cat_stmt, 1, category, -1, SQLITE_TRANSIENT) != SQLITE_OK) {
-                fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
+            if (sqlite3_bind_text(cat_stmt, 1, category, -1, SQLITE_TRANSIENT) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to bind category insert: %s\n", sqlite3_errmsg(db));
                 continue;
             }
 
             // execute the statement
-            if (sqlite3_step(cat_stmt) != SQLITE_OK) {
-                fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
+            if (sqlite3_step(cat_stmt) != SQLITE_DONE)
+            {
+                fprintf(stderr, "Failed to execute category insert: %s\n", sqlite3_errmsg(db));
                 continue;
             }
 
@@ -101,25 +138,29 @@ int main(int argc, char *argv[])
             sqlite3_stmt *get_id_stmt;
             int categoryId = -1;
 
-            if (sqlite3_prepare_v2(db, "SELECT id FROM categories WHERE name = ?;", -1, &get_id_stmt, 0) == SQLITE_OK) {
+            if (sqlite3_prepare_v2(db, "SELECT id FROM categories WHERE name = ?;", -1, &get_id_stmt, 0) == SQLITE_OK)
+            {
                 sqlite3_bind_text(get_id_stmt, 1, category, -1, SQLITE_TRANSIENT);
-                if (sqlite3_step(get_id_stmt) == SQLITE_ROW) {
+                if (sqlite3_step(get_id_stmt) == SQLITE_ROW)
+                {
                     categoryId = sqlite3_column_int(get_id_stmt, 0);
                 }
                 sqlite3_finalize(get_id_stmt);
             }
 
-            if (categoryId == -1) {
+            if (categoryId == -1)
+            {
                 fprintf(stderr, "Could not retrieve category ID.\n");
                 continue;
             }
 
             sqlite3_stmt *expense_stmt;
             rc = sqlite3_prepare_v2(db,
-                "INSERT INTO expenses (amount, category_id, date, description) VALUES (?, ?, ?, ?);",
-                -1, &expense_stmt, 0);
+                                    "INSERT INTO expenses (amount, category_id, date, description) VALUES (?, ?, ?, ?);",
+                                    -1, &expense_stmt, 0);
 
-            if (rc != SQLITE_OK) {
+            if (rc != SQLITE_OK)
+            {
                 fprintf(stderr, "Failed to prepare expense insert: %s\n", sqlite3_errmsg(db));
                 continue;
             }
@@ -129,54 +170,103 @@ int main(int argc, char *argv[])
             sqlite3_bind_text(expense_stmt, 3, date, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(expense_stmt, 4, description, -1, SQLITE_TRANSIENT);
 
-            if (sqlite3_step(expense_stmt) != SQLITE_DONE) {
+            if (sqlite3_step(expense_stmt) != SQLITE_DONE)
+            {
                 fprintf(stderr, "Failed to insert expense: %s\n", sqlite3_errmsg(db));
-            } else {
+            }
+            else
+            {
                 printf("Expense added successfully.\n");
             }
 
             sqlite3_finalize(expense_stmt);
-        } else if (!strcmp(verb, "removeExpense")) {
-            // removeExpense logic
-        } else if (!strcmp(verb, "newCategory")) {
+        } else if (!strcmp(verb, "removeExpense"))
+        {
+            sqlite3_stmt *rmEstmt;
+            const char *rmQuery = "DELETE FROM expenses WHERE (id=?);";
+            char inputRmId[MAX_LENGTH];
+            int rmId;
+
+            printf("ID of the expense you would like to remove: ");
+            if(!fgets(inputRmId, MAX_LENGTH, stdin)) continue;
+            inputRmId[strcspn(inputRmId, "\n")] = '\0';
+            rmId = atoi(inputRmId);
+
+            if (sqlite3_prepare_v2(db, rmQuery, -1, &rmEstmt, NULL) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to prepare a statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            if (sqlite3_bind_int(rmEstmt, 1, rmId) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to bind ID to the statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            if (sqlite3_step(rmEstmt) != SQLITE_DONE)
+            {
+                fprintf(stderr, "Failed to execute the statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            sqlite3_finalize(rmEstmt);
+        } else if (!strcmp(verb, "editExpense"))
+        {
+            // editExpense logic
+        } else if (!strcmp(verb, "newCategory"))
+        {
             // input, statement and query variables
             char categoryName[MAX_LENGTH];
             sqlite3_stmt *categoryStmt;
             const char *categoryQuery = "INSERT INTO categories (name) VALUES (?);";
-            
+
             // Ask for a category
             printf("What is the name of the new category? ");
-            if(!fgets(categoryName, MAX_LENGTH, stdin)) continue;
+            if (!fgets(categoryName, MAX_LENGTH, stdin)) continue;
             categoryName[strcspn(categoryName, "\n")] = '\0';
 
+            if (!strcmp(categoryName, ""))
+            {
+                fprintf(stderr, "Failed to initiate category creation process. Empty category name is not valid.\n");
+                continue;
+            }
             // compile the sqlite3 statement
-            if (sqlite3_prepare_v2(db,categoryQuery, -1, &categoryStmt, NULL) != SQLITE_OK) {
+            if (sqlite3_prepare_v2(db, categoryQuery, -1, &categoryStmt, NULL) != SQLITE_OK)
+            {
                 fprintf(stderr, "Failed to prepare a category insert statement: %s\n", sqlite3_errmsg(db));
                 continue;
             }
-
             // bind the inserted category to the statement
             if (sqlite3_bind_text(categoryStmt, 1, categoryName, -1, SQLITE_TRANSIENT) != SQLITE_OK)
             {
                 fprintf(stderr, "Failed to bind the category name into the statement: %s\n", sqlite3_errmsg(db));
                 continue;
             }
-
             // execute the compiled statement with error handling
             if (sqlite3_step(categoryStmt) != SQLITE_DONE)
             {
-                printf("Failed to create a new category: %s\n", sqlite3_errmsg(db));
+                fprintf(stderr, "Failed to create a new category: %s\n", sqlite3_errmsg(db));
                 continue;
-            } else {
-                printf("Successfully created category \"%s\"\n", categoryName);
+            }
+            else
+            {
+                fprintf(stderr, "Successfully created category \"%s\"\n", categoryName);
+                continue;
             }
 
             // clean up
             sqlite3_finalize(categoryStmt);
-        } else if (!strcmp(verb, "help")) {
+        } else if (!strcmp(verb, "removeCategory"))
+        {
+            // editExpense logic
+        } else if (!strcmp(verb, "help"))
+        {
             printf(
                 " %-15s  | %-45s \n"
                 "===================================================================\n"
+                "| %-15s | %-45s |\n"
+                "| %-15s | %-45s |\n"
                 "| %-15s | %-45s |\n"
                 "| %-15s | %-45s |\n"
                 "| %-15s | %-45s |\n"
@@ -187,16 +277,19 @@ int main(int argc, char *argv[])
                 "Command", "Description",
                 "newExpense", "Create a new expense record",
                 "removeExpense", "Remove an expense record",
+                "editExpense", "Remove an expense record",
                 "newCategory", "Create a new expense category record",
-                "website", "Open the website for visualizing your database",
-                "quit", "Kill sql3-jaja",
-                "help", "List of all commands"
-            );
-        } else if (!strcmp(verb, "quit")) {
+                "removeCategory", "Remove an expense category record",
+                "website", "Website for visualizing your database",
+                "kill", "Kill sql3-jaja",
+                "help", "List of all commands");
+        } else if (!strcmp(verb, "kill"))
+        {
             sqlite3_close(db);
             printf("Your session is over.\n");
-            return(1);
-        } else if (!strcmp(verb, "website")) {
+            return (1);
+        } else if (!strcmp(verb, "website"))
+        {
             system("xdg-open ../sql3-jaja/website/index.html > /dev/null 2>&1");
         }
     }
