@@ -13,9 +13,9 @@ int main(int argc, char *argv[])
     sqlite3 *db;
     char *err_msg = NULL;
 
-    int rc = sqlite3_open("jaja.database", &db);
+    int rc;
 
-    if (rc != SQLITE_OK) {
+    if (sqlite3_open("jaja.database", &db) != SQLITE_OK) {
         fprintf(stderr, "Could not initialize SQLite3 database: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
         return 1;
@@ -34,8 +34,7 @@ int main(int argc, char *argv[])
         "  description TEXT, "
         "  FOREIGN KEY (category_id) REFERENCES categories(id));";
 
-    rc = sqlite3_exec(db, createTablesSQL, 0, 0, &err_msg);
-    if (rc != SQLITE_OK) {
+    if (sqlite3_exec(db, createTablesSQL, 0, 0, &err_msg) != SQLITE_OK) {
         fprintf(stderr, "Could not initialize tables: %s\n", err_msg);
         sqlite3_free(err_msg);
         sqlite3_close(db);
@@ -51,11 +50,17 @@ int main(int argc, char *argv[])
         if (!verb) continue;
 
         if (!strcmp(verb, "newExpense")) {
+            // input variables
             char amountStr[MAX_LENGTH];
             char category[MAX_LENGTH];
             char date[MAX_LENGTH];
             char description[MAX_LENGTH];
 
+            // statement compile variables
+            const char *expenseQuery = "INSERT OR IGNORE INTO categories (name) VALUES (?);";
+            sqlite3_stmt *cat_stmt;
+
+            // inputs
             printf("1. How much money did you spend? ");
             fgets(amountStr, sizeof(amountStr), stdin);
             amountStr[strcspn(amountStr, "\n")] = '\0';
@@ -72,21 +77,31 @@ int main(int argc, char *argv[])
             fgets(description, sizeof(description), stdin);
             description[strcspn(description, "\n")] = '\0';
 
-            sqlite3_stmt *cat_stmt;
-            rc = sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO categories (name) VALUES (?);", -1, &cat_stmt, 0);
-            if (rc != SQLITE_OK) {
+            // prepare statement
+            if (sqlite3_prepare_v2(db, expenseQuery, -1, &cat_stmt, 0) != SQLITE_OK) {
                 fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
                 continue;
             }
-            sqlite3_bind_text(cat_stmt, 1, category, -1, SQLITE_TRANSIENT);
-            sqlite3_step(cat_stmt);
+
+            // bind input to the statement
+            if (sqlite3_bind_text(cat_stmt, 1, category, -1, SQLITE_TRANSIENT) != SQLITE_OK) {
+                fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            // execute the statement
+            if (sqlite3_step(cat_stmt) != SQLITE_OK) {
+                fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            // free
             sqlite3_finalize(cat_stmt);
 
             sqlite3_stmt *get_id_stmt;
             int categoryId = -1;
 
-            rc = sqlite3_prepare_v2(db, "SELECT id FROM categories WHERE name = ?;", -1, &get_id_stmt, 0);
-            if (rc == SQLITE_OK) {
+            if (sqlite3_prepare_v2(db, "SELECT id FROM categories WHERE name = ?;", -1, &get_id_stmt, 0) == SQLITE_OK) {
                 sqlite3_bind_text(get_id_stmt, 1, category, -1, SQLITE_TRANSIENT);
                 if (sqlite3_step(get_id_stmt) == SQLITE_ROW) {
                     categoryId = sqlite3_column_int(get_id_stmt, 0);
@@ -114,8 +129,7 @@ int main(int argc, char *argv[])
             sqlite3_bind_text(expense_stmt, 3, date, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(expense_stmt, 4, description, -1, SQLITE_TRANSIENT);
 
-            rc = sqlite3_step(expense_stmt);
-            if (rc != SQLITE_DONE) {
+            if (sqlite3_step(expense_stmt) != SQLITE_DONE) {
                 fprintf(stderr, "Failed to insert expense: %s\n", sqlite3_errmsg(db));
             } else {
                 printf("Expense added successfully.\n");
@@ -128,7 +142,7 @@ int main(int argc, char *argv[])
             // input, statement and query variables
             char categoryName[MAX_LENGTH];
             sqlite3_stmt *categoryStmt;
-            const char *categoryQuery = "INSERT INTO categories (name) VALUES (?)";
+            const char *categoryQuery = "INSERT INTO categories (name) VALUES (?);";
             
             // Ask for a category
             printf("What is the name of the new category? ");
