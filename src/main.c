@@ -259,7 +259,35 @@ int main(int argc, char *argv[])
             sqlite3_finalize(categoryStmt);
         } else if (!strcmp(verb, "removeCategory"))
         {
-            // editExpense logic
+            sqlite3_stmt *rmEstmt;
+            const char *rmQuery = "DELETE FROM categories WHERE (id=?);";
+            char inputRmId[MAX_LENGTH];
+            int rmId;
+
+            printf("ID of the category you would like to remove: ");
+            if(!fgets(inputRmId, MAX_LENGTH, stdin)) continue;
+            inputRmId[strcspn(inputRmId, "\n")] = '\0';
+            rmId = atoi(inputRmId);
+
+            if (sqlite3_prepare_v2(db, rmQuery, -1, &rmEstmt, NULL) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to prepare a statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            if (sqlite3_bind_int(rmEstmt, 1, rmId) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to bind ID to the statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            if (sqlite3_step(rmEstmt) != SQLITE_DONE)
+            {
+                fprintf(stderr, "Failed to execute the statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            sqlite3_finalize(rmEstmt);
         } else if (!strcmp(verb, "help"))
         {
             printf(
