@@ -3,8 +3,8 @@
 **sql3-jaja** is a cli tool to create, query, export, and visualize financial expenses table using the `sqlite3.h` library in C. The project was made for learning purposes. Project is not meant to be cross-platform, subsequently I can't vouch for non-Ubuntu Linux users.
 
 ## soon to come
-- [] allow only properly DD-MM-YYYY formatted date values.
-- [] revamp command format (from inputting each argument to "verb arg1 arg2 arg3 ...")
+- [ ] allow only properly DD-MM-YYYY formatted date values.
+- [ ] revamp command format (from inputting each argument to "verb arg1 arg2 arg3 ...")
 
 ## how to use
 
