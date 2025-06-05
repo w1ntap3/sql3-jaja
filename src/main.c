@@ -125,7 +125,40 @@ int main(int argc, char *argv[])
         } else if (!strcmp(verb, "removeExpense")) {
             // removeExpense logic
         } else if (!strcmp(verb, "newCategory")) {
-            // newCategory logic
+            // input, statement and query variables
+            char categoryName[MAX_LENGTH];
+            sqlite3_stmt *categoryStmt;
+            const char *categoryQuery = "INSERT INTO categories (name) VALUES (?)";
+            
+            // Ask for a category
+            printf("What is the name of the new category? ");
+            if(!fgets(categoryName, MAX_LENGTH, stdin)) continue;
+            categoryName[strcspn(categoryName, "\n")] = '\0';
+
+            // compile the sqlite3 statement
+            if (sqlite3_prepare_v2(db,categoryQuery, -1, &categoryStmt, NULL) != SQLITE_OK) {
+                fprintf(stderr, "Failed to prepare a category insert statement: %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            // bind the inserted category to the statement
+            if (sqlite3_bind_text(categoryStmt, 1, categoryName, -1, SQLITE_TRANSIENT) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to bind the category name into the statement: %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            // execute the compiled statement with error handling
+            if (sqlite3_step(categoryStmt) != SQLITE_DONE)
+            {
+                printf("Failed to create a new category: %s\n", sqlite3_errmsg(db));
+                continue;
+            } else {
+                printf("Successfully created category \"%s\"\n", categoryName);
+            }
+
+            // clean up
+            sqlite3_finalize(categoryStmt);
         } else if (!strcmp(verb, "help")) {
             printf(
                 " %-15s  | %-45s \n"
