@@ -1,7 +1,6 @@
-//create a custom database file (not just jaja.database)
 //revamp command format from "verb CRLF arg1 CRLF arg2 ..." to "verb arg1 arg2 arg3 ..."
 //sanitize all inputs (only float amounts, unsigned int id's, not null texts, DD-MM-YYYY dates)
-//cannot remove the category if an expense(s) uses it
+//removeCategory doesnt work if an expense uses that category. removecategory force removes the category AND expenses that stored that category.
 //changing only the values you want while editExpense
 
 #include <stdio.h>
@@ -14,6 +13,7 @@
 int main(int argc, char *argv[])
 {
     char input[MAX_LENGTH * 4];
+    char tempInput[MAX_LENGTH * 4];
     char dbName[MAX_LENGTH];
     char *verb;
 
@@ -77,72 +77,34 @@ int main(int argc, char *argv[])
         if (!fgets(input, sizeof(input), stdin)) continue;
         input[strcspn(input, "\n")] = '\0'; // remove newline
 
-        verb = strtok(input, " ");
+        verb = strtok(strcpy(tempInput, input), " ");
 
         if (!verb) continue;
         if (!strcmp(verb, "newExpense"))
         {
-            // input variables
+            
             char amountStr[MAX_LENGTH];
             char category[MAX_LENGTH];
             char date[MAX_LENGTH];
             char description[MAX_LENGTH];
 
+            sscanf(input, "newExpense %s %s %s '%[^']'", amountStr, category, date, description);
+
+            if(!strcmp(amountStr, "") || !strcmp(category, "") || !strcmp(date, ""))
+            {
+                    fprintf(stderr, "Empty argument(s) are not valid. Try again.\n");
+                    continue;
+            }
+
             // statement compile variables
             const char *expenseQuery = "INSERT OR IGNORE INTO categories (name) VALUES (?);";
             sqlite3_stmt *cat_stmt;
-
-            // inputs
-            while (1) {
-                printf("1. How much money did you spend? >> ");
-                fgets(amountStr, sizeof(amountStr), stdin);
-                amountStr[strcspn(amountStr, "\n")] = '\0';
-
-                if(!strcmp(amountStr, "")) {
-                    fprintf(stderr, "Empty amount of money is not valid. Try again.\n");
-                    continue;
-                } else
-                {
-                    break;
-                }
-            }
-            
-            while (1) {
-                printf("\n2. To which category did you spend the money? >> ");
-                fgets(category, sizeof(category), stdin);
-                category[strcspn(category, "\n")] = '\0';
-
-                if(!strcmp(category, "")) {
-                    fprintf(stderr, "Empty category ID is not valid. Try again.\n");
-                    continue;
-                } else
-                {
-                    break;
-                }
-            }
-            
-            while (1) {
-                printf("\n3. When did the expenditure happen? >> ");
-                fgets(date, sizeof(date), stdin);
-                date[strcspn(date, "\n")] = '\0';
-
-                if(!strcmp(date, "")) {
-                    fprintf(stderr, "Empty category ID is not valid. Try again.\n");
-                    continue;
-                } else
-                {
-                    break;
-                }
-            }
-            
-            printf("\n4. Describe the expense. >> ");
-            fgets(description, sizeof(description), stdin);
-            description[strcspn(description, "\n")] = '\0';
 
             // prepare statement
             if (sqlite3_prepare_v2(db, expenseQuery, -1, &cat_stmt, 0) != SQLITE_OK)
             {
                 fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
+                sqlite3_finalize(cat_stmt);
                 continue;
             }
 
@@ -150,6 +112,7 @@ int main(int argc, char *argv[])
             if (sqlite3_bind_text(cat_stmt, 1, category, -1, SQLITE_TRANSIENT) != SQLITE_OK)
             {
                 fprintf(stderr, "Failed to bind category insert: %s\n", sqlite3_errmsg(db));
+                sqlite3_finalize(cat_stmt);
                 continue;
             }
 
@@ -157,6 +120,7 @@ int main(int argc, char *argv[])
             if (sqlite3_step(cat_stmt) != SQLITE_DONE)
             {
                 fprintf(stderr, "Failed to execute category insert: %s\n", sqlite3_errmsg(db));
+                sqlite3_finalize(cat_stmt);
                 continue;
             }
 
@@ -215,9 +179,7 @@ int main(int argc, char *argv[])
             char inputRmId[MAX_LENGTH];
             int rmId;
 
-            printf("ID of the expense you would like to remove >> ");
-            if(!fgets(inputRmId, MAX_LENGTH, stdin)) continue;
-            inputRmId[strcspn(inputRmId, "\n")] = '\0';
+            sscanf(input, "removeExpense %s", inputRmId);
             rmId = atoi(inputRmId);
 
             if (sqlite3_prepare_v2(db, rmQuery, -1, &rmEstmt, NULL) != SQLITE_OK)
@@ -259,42 +221,19 @@ int main(int argc, char *argv[])
             "SET amount=?, category_id=?, date=?, description=? "
             "WHERE id = ?;";
 
-            while (1) {
-                printf("Which expense do you want to edit? (Provide the ID) >> ");
-                if (!fgets(inputExpenseId, MAX_LENGTH, stdin)) continue;
-                inputExpenseId[strcspn(inputExpenseId,"\n")] = '\0';
+            sscanf(input, "editExpense %s %s %s %s '%[^']'", inputExpenseId, newAmount, newCategoryId, newDate, newDescription);
 
-                if (!atoi(inputExpenseId)) continue; else break;
+            if(!strcmp(newAmount, "") || !strcmp(newCategoryId, "") || !strcmp(newDate, ""))
+            {
+                    fprintf(stderr, "Empty argument(s) are not valid. Try again.\n");
+                    continue;
             }
 
-            while (1) {
-                printf("How much did you spend >> ");
-                if (!fgets(newAmount, MAX_LENGTH, stdin)) continue;
-                newAmount[strcspn(newAmount,"\n")] = '\0';
-
-                if (!atof(newAmount)) continue; else break;
+            if (!atoi(inputExpenseId) || !atof(newAmount) || !atoi(newCategoryId)) 
+            {
+                printf("Invalid arguments. Try again.");
+                continue;
             }
-
-            while (1) {
-                printf("To what category? (provide Category ID) >> ");
-                if (!fgets(newCategoryId, MAX_LENGTH, stdin)) continue;
-                newCategoryId[strcspn(newCategoryId,"\n")] = '\0';
-
-                if (!atoi(newCategoryId)) continue; else break;
-            }
-
-            while (1) {
-                printf("When did it happen >> ");
-                if (!fgets(newDate, MAX_LENGTH, stdin)) continue; else break;
-                newDate[strcspn(newDate,"\n")] = '\0';
-            }
-
-            while (1) {
-                printf("Describe the expense >> ");
-                if (!fgets(newDescription, MAX_LENGTH, stdin)) continue; else break;
-                newDescription[strcspn(newDescription,"\n")] = '\0';
-            }
-
             expenseId = atoi(inputExpenseId);
 
             if (sqlite3_prepare_v2(db,editQuery,-1,&editStmt,NULL) != SQLITE_OK)
@@ -327,9 +266,7 @@ int main(int argc, char *argv[])
             const char *categoryQuery = "INSERT INTO categories (name) VALUES (?);";
 
             // Ask for a category
-            printf("What is the name of the new category? >> ");
-            if (!fgets(categoryName, MAX_LENGTH, stdin)) continue;
-            categoryName[strcspn(categoryName, "\n")] = '\0';
+            sscanf(input, "removeExpense %s", categoryName);
 
             if (!strcmp(categoryName, ""))
             {
@@ -399,26 +336,28 @@ int main(int argc, char *argv[])
         } else if (!strcmp(verb, "help"))
         {
             printf(
-                " %-15s  | %-45s \n"
-                "===================================================================\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "| %-15s | %-45s |\n"
-                "===================================================================\n",
+                "===============================================================================================================\n"
+                "| %-59s | %45s |\n"
+                "===============================================================================================================\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "| %-59s | %45s |\n"
+                "===============================================================================================================\n",
                 "Command", "Description",
-                "newExpense", "Create a new expense record",
-                "removeExpense", "Remove an expense record",
-                "editExpense", "Remove an expense record",
-                "newCategory", "Create a new expense category record",
-                "removeCategory", "Remove an expense category record",
+                "newExpense [AMOUNT] [CATEGORY] [DATE] '[DESCRIPTION]'", "Create a new expense record",
+                "removeExpense [ID]", "Remove an expense record",
+                "editExpense [ID] [AMOUNT] [CATEGORY] [DATE] '[DESCRIPTION]'", "Edit an expense record",
+                "newCategory [NAME]", "Create a new expense category record",
+                "removeCategory [ID]", "Remove an expense category record",
                 "website", "Website for visualizing your database",
                 "kill", "Kill sql3-jaja",
                 "help", "List of all commands");
+
         } else if (!strcmp(verb, "kill"))
         {
             sqlite3_close(db);
