@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            if (sqlite3_bind_int(getIdstmt, 1, inputCatName) != SQLITE_OK) {
+            if (sqlite3_bind_text(getIdstmt, 1, inputCatName, -1, NULL) != SQLITE_OK) {
                 fprintf(stderr, "Failed to bind the Id to the statement. %s\n", sqlite3_errmsg(db));
                 continue;
             }
@@ -456,7 +456,7 @@ int main(int argc, char *argv[])
                     anyRows = 1; // No rows
                 }
                 sqlite3_finalize(anyRowsStmt);
-                
+
                 if (anyRows) {
                     if (sqlite3_step(rmCstmt) == SQLITE_DONE)
                     {
