@@ -1,5 +1,3 @@
-//revamp command format from "verb CRLF arg1 CRLF arg2 ..." to "verb arg1 arg2 arg3 ..."
-//sanitize all inputs (only float amounts, unsigned int id's, not null texts, DD-MM-YYYY dates)
 //removeCategory doesnt work if an expense uses that category. removecategory force removes the category AND expenses that stored that category.
 //changing only the values you want while editExpense
 
@@ -82,20 +80,26 @@ int main(int argc, char *argv[])
         if (!verb) continue;
         if (!strcmp(verb, "newExpense"))
         {
-            
             char amountStr[MAX_LENGTH];
             char category[MAX_LENGTH];
-            char date[MAX_LENGTH];
+            char date[11] = "DD-MM-YYYY";
             char description[MAX_LENGTH];
+            unsigned int day = 316972, month = 316972, year = 316972;
 
-            sscanf(input, "newExpense %s %s %s '%[^']'", amountStr, category, date, description);
-
-            if(!strcmp(amountStr, "") || !strcmp(category, "") || !strcmp(date, ""))
+            sscanf(input, "newExpense %s %s %d-%d-%d '%[^']'", amountStr, category, &day,&month,&year, description);
+            if(
+                !strcmp(amountStr, " ") ||
+                !strcmp(category, " ") ||
+                (day == 316972 || !(day <= 31 && day >=0)) ||
+                (month == 316972 || !(month <= 12 && month >=1)) ||
+                (year == 316972 || !(year <= 9999 && year >=0))
+            )
             {
-                    fprintf(stderr, "Empty argument(s) are not valid. Try again.\n");
+                    fprintf(stderr, "Invalid syntax. \"help\" to see the valid syntax.\n");
                     continue;
             }
 
+            snprintf(date, sizeof(date), "%02d-%02d-%04d", day, month, year);
             // statement compile variables
             const char *expenseQuery = "INSERT OR IGNORE INTO categories (name) VALUES (?);";
             sqlite3_stmt *cat_stmt;
@@ -209,9 +213,10 @@ int main(int argc, char *argv[])
             sqlite3_stmt *editStmt;
 
             char newAmount[MAX_LENGTH];
-            char newCategoryId[MAX_LENGTH];
-            char newDate[MAX_LENGTH];
+            char newCategory[MAX_LENGTH];
+            char newDate[11] = "DD-MM-YYYY";
             char newDescription[MAX_LENGTH];
+            unsigned int day = 316972, month = 316972, year = 316972;
 
             char inputExpenseId[MAX_LENGTH];
             int expenseId;
@@ -221,20 +226,72 @@ int main(int argc, char *argv[])
             "SET amount=?, category_id=?, date=?, description=? "
             "WHERE id = ?;";
 
-            sscanf(input, "editExpense %s %s %s %s '%[^']'", inputExpenseId, newAmount, newCategoryId, newDate, newDescription);
+            sscanf(input, "editExpense %s %s %s %d-%d-%d '%[^']'", inputExpenseId, newAmount, newCategory, &day, &month, &year, newDescription);
 
-            if(!strcmp(newAmount, "") || !strcmp(newCategoryId, "") || !strcmp(newDate, ""))
+            if(
+                !strcmp(newAmount, " ") ||
+                !strcmp(newCategory, " ") ||
+                (day == 316972 || !(day <= 31 && day >=0)) ||
+                (month == 316972 || !(month <= 12 && month >=1)) ||
+                (year == 316972 || !(year <= 9999 && year >=0))
+            )
             {
-                    fprintf(stderr, "Empty argument(s) are not valid. Try again.\n");
+                    fprintf(stderr, "Invalid syntax. \"help\" to see the valid syntax.\n");
                     continue;
             }
 
-            if (!atoi(inputExpenseId) || !atof(newAmount) || !atoi(newCategoryId)) 
+            snprintf(newDate, sizeof(newDate), "%02d-%02d-%04d", day, month, year);
+
+            expenseId = atoi(inputExpenseId);
+
+            const char *expenseQuery = "INSERT OR IGNORE INTO categories (name) VALUES (?);";
+            sqlite3_stmt *cat_stmt;
+
+            // prepare statement
+            if (sqlite3_prepare_v2(db, expenseQuery, -1, &cat_stmt, 0) != SQLITE_OK)
             {
-                printf("Invalid arguments. Try again.");
+                fprintf(stderr, "Failed to prepare category insert: %s\n", sqlite3_errmsg(db));
+                sqlite3_finalize(cat_stmt);
                 continue;
             }
-            expenseId = atoi(inputExpenseId);
+
+            // bind input to the statement
+            if (sqlite3_bind_text(cat_stmt, 1, newCategory, -1, SQLITE_TRANSIENT) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to bind category insert: %s\n", sqlite3_errmsg(db));
+                sqlite3_finalize(cat_stmt);
+                continue;
+            }
+
+            // execute the statement
+            if (sqlite3_step(cat_stmt) != SQLITE_DONE)
+            {
+                fprintf(stderr, "Failed to execute category insert: %s\n", sqlite3_errmsg(db));
+                sqlite3_finalize(cat_stmt);
+                continue;
+            }
+
+            // free
+            sqlite3_finalize(cat_stmt);
+
+            sqlite3_stmt *get_id_stmt;
+            int categoryId = -1;
+
+            if (sqlite3_prepare_v2(db, "SELECT id FROM categories WHERE name = ?;", -1, &get_id_stmt, 0) == SQLITE_OK)
+            {
+                sqlite3_bind_text(get_id_stmt, 1, newCategory, -1, SQLITE_TRANSIENT);
+                if (sqlite3_step(get_id_stmt) == SQLITE_ROW)
+                {
+                    categoryId = sqlite3_column_int(get_id_stmt, 0);
+                }
+                sqlite3_finalize(get_id_stmt);
+            }
+
+            if (categoryId == -1)
+            {
+                fprintf(stderr, "Could not retrieve category ID.\n");
+                continue;
+            }
 
             if (sqlite3_prepare_v2(db,editQuery,-1,&editStmt,NULL) != SQLITE_OK)
             {
@@ -243,7 +300,7 @@ int main(int argc, char *argv[])
             }
 
             sqlite3_bind_double(editStmt, 1, atof(newAmount));
-            sqlite3_bind_int(editStmt, 2, atoi(newCategoryId));
+            sqlite3_bind_int(editStmt, 2, categoryId);
             sqlite3_bind_text(editStmt, 3, newDate, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(editStmt, 4, newDescription, -1, SQLITE_TRANSIENT);
             sqlite3_bind_int(editStmt, 5, expenseId);
@@ -336,20 +393,20 @@ int main(int argc, char *argv[])
         } else if (!strcmp(verb, "help"))
         {
             printf(
-                "===============================================================================================================\n"
-                "| %-59s | %45s |\n"
-                "===============================================================================================================\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "| %-59s | %45s |\n"
-                "===============================================================================================================\n",
+                "| %-60s | %45s |\n"
+                "================================================================================================================\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n"
+                "| %-60s | %45s |\n",
                 "Command", "Description",
-                "newExpense [AMOUNT] [CATEGORY] [DATE] '[DESCRIPTION]'", "Create a new expense record",
+                "newExpense [AMOUNT] [CATEGORY] [DATE (in DD-MM-YYYY ", "Create a new expense record",
+                "format only)] '[DESCRIPTION]'", "",
                 "removeExpense [ID]", "Remove an expense record",
                 "editExpense [ID] [AMOUNT] [CATEGORY] [DATE] '[DESCRIPTION]'", "Edit an expense record",
                 "newCategory [NAME]", "Create a new expense category record",
