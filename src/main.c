@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    while (1)
+    while (31)
     {
         printf("sql3-jaja >> ");
         if (!fgets(input, sizeof(input), stdin)) continue;
@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
             sqlite3_stmt *cat_stmt;
 
             // inputs
-            while (1) {
-                printf("1. How much money did you spend? ");
+            while (31) {
+                printf("1. How much money did you spend? >> ");
                 fgets(amountStr, sizeof(amountStr), stdin);
                 amountStr[strcspn(amountStr, "\n")] = '\0';
 
@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
                 }
             }
             
-            while (1) {
-                printf("\n2. To which category did you spend the money? ");
+            while (31) {
+                printf("\n2. To which category did you spend the money? >> ");
                 fgets(category, sizeof(category), stdin);
                 category[strcspn(category, "\n")] = '\0';
 
@@ -93,8 +93,8 @@ int main(int argc, char *argv[])
                 }
             }
             
-            while (1) {
-                printf("\n3. When did the expenditure happen? ");
+            while (31) {
+                printf("\n3. When did the expenditure happen? >> ");
                 fgets(date, sizeof(date), stdin);
                 date[strcspn(date, "\n")] = '\0';
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
                 }
             }
             
-            printf("\n4. Describe the expense. ");
+            printf("\n4. Describe the expense. >> ");
             fgets(description, sizeof(description), stdin);
             description[strcspn(description, "\n")] = '\0';
 
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
             char inputRmId[MAX_LENGTH];
             int rmId;
 
-            printf("ID of the expense you would like to remove: ");
+            printf("ID of the expense you would like to remove >> ");
             if(!fgets(inputRmId, MAX_LENGTH, stdin)) continue;
             inputRmId[strcspn(inputRmId, "\n")] = '\0';
             rmId = atoi(inputRmId);
@@ -208,12 +208,89 @@ int main(int argc, char *argv[])
             {
                 fprintf(stderr, "Failed to execute the statement. %s\n", sqlite3_errmsg(db));
                 continue;
+            } else
+            {
+                printf("Successfully removed expense with ID \"%d\"\n", rmId);
             }
 
             sqlite3_finalize(rmEstmt);
         } else if (!strcmp(verb, "editExpense"))
         {
-            // editExpense logic
+            sqlite3_stmt *editStmt;
+
+            char newAmount[MAX_LENGTH];
+            char newCategoryId[MAX_LENGTH];
+            char newDate[MAX_LENGTH];
+            char newDescription[MAX_LENGTH];
+
+            char inputExpenseId[MAX_LENGTH];
+            int expenseId;
+
+            const char *editQuery = 
+            "UPDATE expenses "
+            "SET amount=?, category_id=?, date=?, description=? "
+            "WHERE id = ?;";
+
+            while (31) {
+                printf("Which expense do you want to edit? (Provide the ID) >> ");
+                if (!fgets(inputExpenseId, MAX_LENGTH, stdin)) continue;
+                inputExpenseId[strcspn(inputExpenseId,"\n")] = '\0';
+
+                if (!atoi(inputExpenseId)) continue; else break;
+            }
+
+            while (31) {
+                printf("How much did you spend >> ");
+                if (!fgets(newAmount, MAX_LENGTH, stdin)) continue;
+                newAmount[strcspn(newAmount,"\n")] = '\0';
+
+                if (!atof(newAmount)) continue; else break;
+            }
+
+            while (31) {
+                printf("To what category? (provide Category ID) >> ");
+                if (!fgets(newCategoryId, MAX_LENGTH, stdin)) continue;
+                newCategoryId[strcspn(newCategoryId,"\n")] = '\0';
+
+                if (!atoi(newCategoryId)) continue; else break;
+            }
+
+            while (31) {
+                printf("When did it happen >> ");
+                if (!fgets(newDate, MAX_LENGTH, stdin)) continue; else break;
+                newDate[strcspn(newDate,"\n")] = '\0';
+            }
+
+            while (31) {
+                printf("Describe the expense >> ");
+                if (!fgets(newDescription, MAX_LENGTH, stdin)) continue; else break;
+                newDescription[strcspn(newDescription,"\n")] = '\0';
+            }
+
+            expenseId = atoi(inputExpenseId);
+
+            if (sqlite3_prepare_v2(db,editQuery,-1,&editStmt,NULL) != SQLITE_OK)
+            {
+                fprintf(stderr, "Failed to compile the statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            }
+
+            sqlite3_bind_double(editStmt, 1, atof(newAmount));
+            sqlite3_bind_int(editStmt, 2, atoi(newCategoryId));
+            sqlite3_bind_text(editStmt, 3, newDate, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(editStmt, 4, newDescription, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(editStmt, 5, expenseId);
+
+            if (sqlite3_step(editStmt) != SQLITE_DONE)
+            {
+                fprintf(stderr, "Failed to execute the statement. %s\n", sqlite3_errmsg(db));
+                continue;
+            } else
+            {
+                printf("Successfully edited expense with id \"%d\"\n", expenseId);
+            }
+            
+            sqlite3_finalize(editStmt);
         } else if (!strcmp(verb, "newCategory"))
         {
             // input, statement and query variables
@@ -222,7 +299,7 @@ int main(int argc, char *argv[])
             const char *categoryQuery = "INSERT INTO categories (name) VALUES (?);";
 
             // Ask for a category
-            printf("What is the name of the new category? ");
+            printf("What is the name of the new category? >> ");
             if (!fgets(categoryName, MAX_LENGTH, stdin)) continue;
             categoryName[strcspn(categoryName, "\n")] = '\0';
 
@@ -264,7 +341,7 @@ int main(int argc, char *argv[])
             char inputRmId[MAX_LENGTH];
             int rmId;
 
-            printf("ID of the category you would like to remove: ");
+            printf("ID of the category you would like to remove >> ");
             if(!fgets(inputRmId, MAX_LENGTH, stdin)) continue;
             inputRmId[strcspn(inputRmId, "\n")] = '\0';
             rmId = atoi(inputRmId);
@@ -285,6 +362,9 @@ int main(int argc, char *argv[])
             {
                 fprintf(stderr, "Failed to execute the statement. %s\n", sqlite3_errmsg(db));
                 continue;
+            } else
+            {
+                printf("Successfully removed category with ID \"%d\"\n", rmId);
             }
 
             sqlite3_finalize(rmEstmt);
