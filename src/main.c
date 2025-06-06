@@ -1,3 +1,9 @@
+//create a custom database file (not just jaja.database)
+//revamp command format from "verb CRLF arg1 CRLF arg2 ..." to "verb arg1 arg2 arg3 ..."
+//sanitize all inputs (only float amounts, unsigned int id's, not null texts, DD-MM-YYYY dates)
+//cannot remove the category if an expense(s) uses it
+//changing only the values you want while editExpense
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,18 +14,40 @@
 int main(int argc, char *argv[])
 {
     char input[MAX_LENGTH * 4];
+    char dbName[MAX_LENGTH];
     char *verb;
 
     sqlite3 *db;
     char *err_msg = NULL;
 
     int rc;
+    printf(
+        "WELCOME TO SQL3-JAJA\n"
+        "====================\n");
+    
+    while (1) {
+        printf("Please enter the database disk file name (located in sql3-jaja/) >> ");
+        if (!fgets(dbName, sizeof(dbName), stdin)) continue;
+        dbName[strcspn(dbName, "\n")] = '\0';
 
-    if (sqlite3_open("jaja.database", &db) != SQLITE_OK)
+        if (!strcmp(dbName, "")) 
+        {
+            printf("Cannot use an empty filename. Try again.\n"); 
+            continue; 
+        } else break;
+    }
+
+    char dbPath[MAX_LENGTH];
+    snprintf(dbPath, MAX_LENGTH*2, "db/%s", dbName);
+    
+    if (sqlite3_open(dbPath, &db) != SQLITE_OK)
     {
         fprintf(stderr, "Could not initialize SQLite3 database: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
         return 1;
+    } else 
+    {
+        printf("Successfully opened \"%s\" database file\n", dbName);
     }
 
     // Create tables
@@ -43,7 +71,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    while (31)
+    while (1)
     {
         printf("sql3-jaja >> ");
         if (!fgets(input, sizeof(input), stdin)) continue;
@@ -65,7 +93,7 @@ int main(int argc, char *argv[])
             sqlite3_stmt *cat_stmt;
 
             // inputs
-            while (31) {
+            while (1) {
                 printf("1. How much money did you spend? >> ");
                 fgets(amountStr, sizeof(amountStr), stdin);
                 amountStr[strcspn(amountStr, "\n")] = '\0';
@@ -79,7 +107,7 @@ int main(int argc, char *argv[])
                 }
             }
             
-            while (31) {
+            while (1) {
                 printf("\n2. To which category did you spend the money? >> ");
                 fgets(category, sizeof(category), stdin);
                 category[strcspn(category, "\n")] = '\0';
@@ -93,7 +121,7 @@ int main(int argc, char *argv[])
                 }
             }
             
-            while (31) {
+            while (1) {
                 printf("\n3. When did the expenditure happen? >> ");
                 fgets(date, sizeof(date), stdin);
                 date[strcspn(date, "\n")] = '\0';
@@ -231,7 +259,7 @@ int main(int argc, char *argv[])
             "SET amount=?, category_id=?, date=?, description=? "
             "WHERE id = ?;";
 
-            while (31) {
+            while (1) {
                 printf("Which expense do you want to edit? (Provide the ID) >> ");
                 if (!fgets(inputExpenseId, MAX_LENGTH, stdin)) continue;
                 inputExpenseId[strcspn(inputExpenseId,"\n")] = '\0';
@@ -239,7 +267,7 @@ int main(int argc, char *argv[])
                 if (!atoi(inputExpenseId)) continue; else break;
             }
 
-            while (31) {
+            while (1) {
                 printf("How much did you spend >> ");
                 if (!fgets(newAmount, MAX_LENGTH, stdin)) continue;
                 newAmount[strcspn(newAmount,"\n")] = '\0';
@@ -247,7 +275,7 @@ int main(int argc, char *argv[])
                 if (!atof(newAmount)) continue; else break;
             }
 
-            while (31) {
+            while (1) {
                 printf("To what category? (provide Category ID) >> ");
                 if (!fgets(newCategoryId, MAX_LENGTH, stdin)) continue;
                 newCategoryId[strcspn(newCategoryId,"\n")] = '\0';
@@ -255,13 +283,13 @@ int main(int argc, char *argv[])
                 if (!atoi(newCategoryId)) continue; else break;
             }
 
-            while (31) {
+            while (1) {
                 printf("When did it happen >> ");
                 if (!fgets(newDate, MAX_LENGTH, stdin)) continue; else break;
                 newDate[strcspn(newDate,"\n")] = '\0';
             }
 
-            while (31) {
+            while (1) {
                 printf("Describe the expense >> ");
                 if (!fgets(newDescription, MAX_LENGTH, stdin)) continue; else break;
                 newDescription[strcspn(newDescription,"\n")] = '\0';
@@ -289,7 +317,7 @@ int main(int argc, char *argv[])
             {
                 printf("Successfully edited expense with id \"%d\"\n", expenseId);
             }
-            
+
             sqlite3_finalize(editStmt);
         } else if (!strcmp(verb, "newCategory"))
         {
