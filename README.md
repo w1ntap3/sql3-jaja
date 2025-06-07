@@ -3,11 +3,18 @@
 **sql3-jaja** is a cli tool to track financial expenses using the **sqlite3 library in C**. The project was made for learning purposes. Project is not meant to be cross-platform, subsequently I can't vouch for non-Ubuntu Linux users.
 
 ## v0.1.1
-1. sanitized all argument input
-2. revamped the command format from asking each argument manually to a single line syntax **"verb arg1 arg2 arg3 ..."**
-3. you get to create a custom database disk file (not just jaja.database)
-4. enhanced removeCategory command to support forced removal of categories and associated expenses
-5. better help
+- Dynamic database file selection from "db/" directory
+- Add new expense (`newExpense`)
+- Remove an expense by ID (`removeExpense`)
+- Edit an existing expense by ID (`editExpense`)
+- Add a new category (`newCategory`)
+- Remove a category by name (`removeCategory`)
+- Force remove a category and its related expenses (`removeCategory`)
+- Validate date format and range
+- Support for custom expense descriptions
+- Help command with syntax descriptions
+- Basic input sanitization
+- Error handling and feedback on database operations
 
 ## how to use
 
