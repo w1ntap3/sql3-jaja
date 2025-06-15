@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
             const char *categoryQuery = "INSERT INTO categories (name) VALUES (?);";
 
             // Ask for a category
-            sscanf(input, "removeExpense %s", categoryName);
+            sscanf(input, "newCategory %s", categoryName);
 
             if (!strcmp(categoryName, ""))
             {
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
             return (1);
         } else if (!strcmp(verb, "website"))
         {
-            system("xdg-open ../sql3-jaja/website/index.html > /dev/null 2>&1");
+            system("xdg-open ./website/index.html > /dev/null 2>&1");
         }
     }
 
