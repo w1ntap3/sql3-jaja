@@ -368,7 +368,7 @@ int main(int argc, char *argv[])
             // Category ID found through name
             int foundId = -1;
 
-            sscanf(input, "removeCategory %s %s", inputCatName, forced);            
+            sscanf(input, "removeCategory '%[^']' %s", inputCatName, forced); 
             // statement for cat id via cat name
             sqlite3_stmt *getIdstmt;
             const char *getIdQuery = "SELECT id from categories WHERE name = ?;";
@@ -389,7 +389,15 @@ int main(int argc, char *argv[])
             if (stepResult == SQLITE_ROW) {
                 foundId = sqlite3_column_int(getIdstmt, 0); // successful step --> found an id
             } else if (stepResult == SQLITE_DONE) {
-                printf("No such category named \"%s\"", inputCatName); // successful step --> category doesnt exist
+                if (strcmp(inputCatName, ""))
+                {
+                    printf("No such category named \"%s\"\n", inputCatName); // successful step --> category doesnt exist
+                } else
+                {
+                    printf(
+                        "No such category named \"\": Please make sure to follow proper syntax:\n"
+                        "removeCategory '[CATEGORY]' {FORCED}\n");
+                }
                 continue;
             } else {
                 fprintf(stderr, "Failed to properly execute the getId statement. %s\n", sqlite3_errmsg(db)); // failed step (error)
@@ -472,7 +480,7 @@ int main(int argc, char *argv[])
                 } else {
                     printf(
                         "Cannot remove the category \"%s\": There are expense records with this category.\n"
-                        "(Try \"removeCategory [CATEGORY_NAME] FORCED\" to remove both category and expenses)", inputCatName);
+                        "(Try \"removeCategory [CATEGORY_NAME] FORCED\" to remove both category and expenses)\n", inputCatName);
                 }
             }
         } else if (!strcmp(verb, "help"))
@@ -490,7 +498,6 @@ int main(int argc, char *argv[])
                 "| %-60s | %45s |\n"
                 "| %-60s | %45s |\n"
                 "| %-60s | %45s |\n"
-                "| %-60s | %45s |\n"
                 "| %-60s | %45s |\n",
                 "Command", "Description",
                 "newExpense [AMOUNT] [CATEGORY] [DATE (in DD-MM-YYYY ", "Create a new expense record",
@@ -498,12 +505,11 @@ int main(int argc, char *argv[])
                 "removeExpense [ID]", "Remove an expense record",
                 "editExpense [ID] [AMOUNT] [CATEGORY] [DATE] '[DESCRIPTION]'", "Edit an expense record",
                 "newCategory [NAME]", "Create a new expense category record",
-                "removeCategory [ID]", "Remove a category record (Will not pass ",
-                "", "through if category is used somewhere)",
-                "removeCategory [ID] forced", "Removes a category record + all the expenses",
-                "", "with that category",
+                "removeCategory '[CATEGORY]' {FORCED}", "Remove a category record (Will not pass ",
+                "", "through if category is used somewhere). Use",
+                "", "FORCED to remove category with it's expenses",
                 "website", "Website for visualizing your database",
-                "kill", "Kill sql3-jaja",
+                "kill or Ctrl + C", "Kill sql3-jaja",
                 "help", "List of all commands");
 
         } else if (!strcmp(verb, "kill"))
